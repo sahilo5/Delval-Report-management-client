@@ -1,20 +1,25 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import { useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 
 interface RegisterFormData {
   username: string;
   email: string;
   password: string;
-  phoneNumber: number;
+  phoneNumber: string;
   firstName: string;
   lastName: string;
 }
 
-const Register: React.FC = () => {
+interface ErrorResponse {
+  message: string;
+}
+
+function Register() {
   const [formData, setFormData] = useState<RegisterFormData>({
     username: '',
     email: '',
     password: '',
-    phoneNumber: 0,
+    phoneNumber: '',
     firstName: '',
     lastName: ''
   });
@@ -25,7 +30,7 @@ const Register: React.FC = () => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'phoneNumber' ? parseInt(value) || 0 : value
+      [name]: value
     }));
   };
 
@@ -43,12 +48,11 @@ const Register: React.FC = () => {
         body: JSON.stringify(formData)
       });
 
-      const data = await response.json();
-
       if (response.ok) {
         setMessage('Registration successful! You can now log in.');
       } else {
-        setMessage((data as any).message || 'Registration failed');
+        const error: ErrorResponse = await response.json();
+        setMessage(error.message || 'Registration failed');
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -75,7 +79,7 @@ const Register: React.FC = () => {
                 name="username"
                 type="text"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white bg-transparent rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Username"
                 value={formData.username}
                 onChange={handleChange}
@@ -88,7 +92,7 @@ const Register: React.FC = () => {
                 name="email"
                 type="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white bg-transparent focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
                 value={formData.email}
                 onChange={handleChange}
@@ -101,7 +105,7 @@ const Register: React.FC = () => {
                 name="password"
                 type="password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white bg-transparent focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
@@ -114,7 +118,7 @@ const Register: React.FC = () => {
                 name="phoneNumber"
                 type="tel"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white bg-transparent focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Phone Number"
                 value={formData.phoneNumber}
                 onChange={handleChange}
@@ -127,7 +131,7 @@ const Register: React.FC = () => {
                 name="firstName"
                 type="text"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white bg-transparent focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="First Name"
                 value={formData.firstName}
                 onChange={handleChange}
@@ -140,7 +144,7 @@ const Register: React.FC = () => {
                 name="lastName"
                 type="text"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white bg-transparent rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Last Name"
                 value={formData.lastName}
                 onChange={handleChange}

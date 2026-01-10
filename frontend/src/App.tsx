@@ -1,10 +1,8 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './components/Login';
 import Register from './components/Register';
 
-
-const App: React.FC = () => {
+function App() {
   return (
     <Router>
       <Routes>
@@ -13,6 +11,6 @@ const App: React.FC = () => {
       </Routes>
     </Router>
   );
-};
+}
 
 export default App;

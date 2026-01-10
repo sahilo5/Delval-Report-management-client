@@ -1,4 +1,5 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import { useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
 interface LoginFormData {
@@ -13,7 +14,11 @@ interface LoginResponse {
   tokenType: string;
 }
 
-const Login: React.FC = () => {
+interface ErrorResponse {
+  message: string;
+}
+
+function Login() {
   const [formData, setFormData] = useState<LoginFormData>({
     username: '',
     password: ''
@@ -43,15 +48,15 @@ const Login: React.FC = () => {
         body: JSON.stringify(formData)
       });
 
-      const data: LoginResponse = await response.json();
-
       if (response.ok) {
+        const data: LoginResponse = await response.json();
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('username', data.username);
         localStorage.setItem('userRole', data.userRole);
         setMessage('Login successful!');
       } else {
-        setMessage((data as any).message || 'Login failed');
+        const error: ErrorResponse = await response.json();
+        setMessage(error.message || 'Login failed');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -78,7 +83,7 @@ const Login: React.FC = () => {
                 value={formData.username}
                 onChange={handleChange}
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white bg-transparent rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Username"
               />
             </div>
@@ -91,7 +96,7 @@ const Login: React.FC = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white bg-transparent rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
               />
             </div>
