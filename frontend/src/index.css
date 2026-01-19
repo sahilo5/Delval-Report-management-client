@@ -1,5 +1,27 @@
 @import "tailwindcss";
 
+@theme {
+  /* Brand / Actions */
+  --color-primary: #2563eb;   
+  --color-secondary: #1e293b; 
+  --color-accent: #0ea5e9;    
+
+  /* Layout */
+  --color-background: #f8fafc; 
+  --color-surface: #ffffff;    
+  --color-border: #e2e8f0;     
+
+  /* Text */
+  --color-text-primary: #0f172a; 
+  --color-text-muted: #64748b;  
+
+  /* Status */
+  --color-success: #16a34a; 
+  --color-warning: #f59e0b; 
+  --color-danger: #dc2626;  
+}
+
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
