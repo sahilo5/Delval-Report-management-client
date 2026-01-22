@@ -8,6 +8,39 @@ import { useToast } from "./ui/Toaster";
 import { Checkbox } from "./ui/Checkbox";
 import { Select } from "./ui/Select";
 import { TextArea } from "./ui/TextArea";
+import Browse, { type Column } from "./ui/Browse";
+
+type MockUser = {
+    id: number;
+    name: string;
+    email: string;
+    role: string | string[];
+    status: string;
+    amount: number;
+};
+
+const mockUsers: MockUser[] = Array.from({ length: 25 }, (_, i) => ({
+    id: i + 1,
+    name: `User ${i + 1}`,
+    email: `user${i + 1}@example.com`,
+    role: i % 3 === 0 ? "Admin" : i % 3 === 1 ? ["User", "Editor"] : "Viewer",
+    status: i % 4 === 0 ? "Active" : i % 4 === 1 ? "Pending" : i % 4 === 2 ? "Rejected" : "Paid",
+    amount: Math.floor(Math.random() * 1000)
+}));
+
+const columns: Column<MockUser>[] = [
+    { header: "ID", accessor: "id", sortable: true },
+    { header: "Name", accessor: "name", sortable: true },
+    { header: "Email", accessor: "email", sortable: true },
+    { header: "Role", accessor: "role", sortable: false }, // Auto-badge test
+    { header: "Status", accessor: "status", sortable: true }, // Auto-badge test
+    {
+        header: "Amount",
+        accessor: "amount",
+        sortable: true,
+        render: (row) => <span className="font-mono">${row.amount.toFixed(2)}</span>
+    }
+];
 
 export default function ComponentTest() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -140,6 +173,32 @@ export default function ComponentTest() {
                             <label htmlFor="check1" className="text-sm text-text-primary">Checkbox Example</label>
                         </div>
                     </div>
+                </section>
+
+                {/* Browse Table Section */}
+                <section className="space-y-4 p-6 bg-surface rounded-xl shadow-sm border border-border">
+                    <h2 className="text-xl font-semibold text-text-primary">Browse (Data Table)</h2>
+                    <Browse
+                        title="User Management"
+                        subtitle="List of all registered users"
+                        columns={columns}
+                        data={mockUsers}
+                        enableSearch={true}
+                        enablePagination={true}
+                        itemsPerPage={5}
+                        headerActions={
+                            <Button variant="primary" size="sm" onClick={() => toast({ type: "info", message: "Add User Clicked" })}>
+                                + Add User
+                            </Button>
+                        }
+                        rowActions={(row) => (
+                            <div className="flex gap-2">
+                                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); toast({ type: "info", message: `Edit ${row.name}` }) }}>Edit</Button>
+                                <Button size="sm" variant="danger" onClick={(e) => { e.stopPropagation(); toast({ type: "error", message: `Delete ${row.name}` }) }}>Delete</Button>
+                            </div>
+                        )}
+                        onRowClick={(row) => toast({ type: "success", message: `Clicked row: ${row.name}` })}
+                    />
                 </section>
 
             </div>
