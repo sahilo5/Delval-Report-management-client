@@ -17,6 +17,7 @@ type MockUser = {
     role: string | string[];
     status: string;
     amount: number;
+    address: { city: string }; // Nested data test
 };
 
 const mockUsers: MockUser[] = Array.from({ length: 25 }, (_, i) => ({
@@ -25,14 +26,16 @@ const mockUsers: MockUser[] = Array.from({ length: 25 }, (_, i) => ({
     email: `user${i + 1}@example.com`,
     role: i % 3 === 0 ? "Admin" : i % 3 === 1 ? ["User", "Editor"] : "Viewer",
     status: i % 4 === 0 ? "Active" : i % 4 === 1 ? "Pending" : i % 4 === 2 ? "Rejected" : "Paid",
-    amount: Math.floor(Math.random() * 1000)
+    amount: Math.floor(Math.random() * 1000),
+    address: { city: i % 2 === 0 ? "New York" : "London" }
 }));
 
 const columns: Column<MockUser>[] = [
     { header: "ID", accessor: "id", sortable: true },
     { header: "Name", accessor: "name", sortable: true },
     { header: "Email", accessor: "email", sortable: true },
-    { header: "Role", accessor: "role", sortable: false }, // Auto-badge test
+    { header: "City", accessor: "address.city", sortable: true }, // Nested accessor test
+    { header: "Role", accessor: "role", sortable: true }, // Auto-badge test
     { header: "Status", accessor: "status", sortable: true }, // Auto-badge test
     {
         header: "Amount",
@@ -40,6 +43,87 @@ const columns: Column<MockUser>[] = [
         sortable: true,
         render: (row) => <span className="font-mono">${row.amount.toFixed(2)}</span>
     }
+];
+
+// Actuator Data Type
+type ActuatorOrder = {
+    productionOrderNo: string;
+    productionOrderType: string;
+    productionOrderDate: string;
+    customerCode: string;
+    customerName: string;
+    salesOrder: string;
+    salesOrderPosition: number;
+    itemCode: string;
+    itemDescription: string;
+    brand: string;
+    seriesCode: string;
+    sizeCode: string;
+    moc: string;
+    type: string;
+    orderQuantity: number;
+    confirmedQuantity: number;
+    pendingQuantity: number;
+    deliveryDate: string;
+    productionOrderStatus: string;
+    status: string;
+};
+
+const actuatorData: ActuatorOrder[] = [
+    {
+        "productionOrderNo": "000012013820",
+        "productionOrderType": "ACT1",
+        "productionOrderDate": "2025-12-22",
+        "customerCode": "0000201966",
+        "customerName": "BURCKHARDT COMPRESSI",
+        "salesOrder": "0020011952",
+        "salesOrderPosition": 10,
+        "itemCode": "21W006509C01000UNP",
+        "itemDescription": "", // Empty start for test
+        "brand": "ACT",
+        "seriesCode": "21",
+        "sizeCode": "065",
+        "moc": "NA",
+        "type": "FIG",
+        "orderQuantity": 2,
+        "confirmedQuantity": 0, // Empty start
+        "pendingQuantity": 1,
+        "deliveryDate": "2025-12-06",
+        "productionOrderStatus": "UNDER_TESTING",
+        "status": "UNDER_TESTING"
+    },
+    {
+        "productionOrderNo": "000012013821",
+        "productionOrderType": "ACT1",
+        "productionOrderDate": "2025-12-22",
+        "customerCode": "0000201966",
+        "customerName": "BURCKHARDT COMPRESSI",
+        "salesOrder": "0020011952",
+        "salesOrderPosition": 10,
+        "itemCode": "21W006509C01000UNP",
+        "itemDescription": "UPDATED DESCRIPTION",
+        "brand": "ACT",
+        "seriesCode": "21",
+        "sizeCode": "065",
+        "moc": "NA",
+        "type": "FIG",
+        "orderQuantity": 2,
+        "confirmedQuantity": 1,
+        "pendingQuantity": 1,
+        "deliveryDate": "2025-12-06",
+        "productionOrderStatus": "UNDER_TESTING",
+        "status": "UNDER_ASSEMBLY"
+    }
+];
+
+const actuatorColumns: Column<ActuatorOrder>[] = [
+    { header: "PO No", accessor: "productionOrderNo" },
+    { header: "Customer", accessor: "customerName" },
+    { header: "Item Code", accessor: "itemCode" },
+    { header: "Description", accessor: "itemDescription", editable: true }, // Editable
+    { header: "Order Qty", accessor: "orderQuantity" },
+    { header: "Conf. Qty", accessor: "confirmedQuantity", editable: true }, // Editable
+    { header: "Status", accessor: "status", editable: true }, // Editable
 ];
 
 export default function ComponentTest() {
@@ -185,11 +269,16 @@ export default function ComponentTest() {
                         data={mockUsers}
                         enableSearch={true}
                         enablePagination={true}
-                        itemsPerPage={5}
+                        itemsPerPage={10}
                         headerActions={
-                            <Button variant="primary" size="sm" onClick={() => toast({ type: "info", message: "Add User Clicked" })}>
-                                + Add User
-                            </Button>
+                            <>
+                                <Button variant="primary" size="sm" onClick={() => toast({ type: "info", message: "Add User Clicked" })}>
+                                    + Add User
+                                </Button>
+                                <Button variant="primary" size="sm" onClick={() => toast({ type: "info", message: "Add User Clicked" })}>
+                                    + Update
+                                </Button>
+                            </>
                         }
                         rowActions={(row) => (
                             <div className="flex gap-2">
@@ -198,6 +287,32 @@ export default function ComponentTest() {
                             </div>
                         )}
                         onRowClick={(row) => toast({ type: "success", message: `Clicked row: ${row.name}` })}
+                    />
+                </section>
+
+                {/* Actuator Production Orders (Editable Test) */}
+                <section className="space-y-4 p-6 bg-surface rounded-xl shadow-sm border border-border">
+                    <h2 className="text-xl font-semibold text-text-primary">Actuator Production Orders (Editable)</h2>
+                    <p className="text-sm text-text-muted">Edit "Description", "Conf. Qty", or "Status" and click Save to see the JSON payload.</p>
+                    <Browse
+                        title="Production Orders"
+                        columns={actuatorColumns}
+                        data={actuatorData}
+                        enableSearch={true}
+                        enablePagination={true}
+                        itemsPerPage={5}
+                        rowActions={(row) => (
+                            <Button
+                                size="sm"
+                                variant="success"
+                                onClick={() => {
+                                    console.log("Saving Row JSON:", JSON.stringify(row, null, 2));
+                                    toast({ type: "success", title: "Saved!", message: "Check console for JSON payload" });
+                                }}
+                            >
+                                Save
+                            </Button>
+                        )}
                     />
                 </section>
 

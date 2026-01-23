@@ -8,6 +8,7 @@ export type Column<T> = {
     accessor: keyof T | string; // Allow string for nested paths if needed in future
     render?: (row: T) => React.ReactNode;
     sortable?: boolean;
+    editable?: boolean;
     className?: string;
 };
 
@@ -53,9 +54,29 @@ function Browse<T extends Record<string, any>>({
         if (search.trim() && enableSearch) {
             const searchLower = search.toLowerCase();
             filtered = filtered.filter((row) =>
-                Object.values(row).some((value) =>
-                    String(value).toLowerCase().includes(searchLower)
-                )
+                columns.some((col) => {
+                    // Helper to get nested value
+                    const getValue = (obj: any, path: any) => {
+                        if (typeof path !== "string") return obj[path];
+                        return path.split(".").reduce((acc, part) => acc && acc[part], obj);
+                    };
+
+                    const value = getValue(row, col.accessor);
+
+                    if (value == null) return false;
+
+                    if (Array.isArray(value)) {
+                        return value.some((v) => String(v).toLowerCase().includes(searchLower));
+                    }
+
+                    if (typeof value === 'object') {
+                        // Try to search stringified JSON for objects to catch deeply nested text
+                        // or just return false if we don't want to search objects
+                        return JSON.stringify(value).toLowerCase().includes(searchLower);
+                    }
+
+                    return String(value).toLowerCase().includes(searchLower);
+                })
             );
         }
 
@@ -144,11 +165,50 @@ function Browse<T extends Record<string, any>>({
         return pages;
     };
 
-    const renderCell = (row: T, col: Column<T>) => {
+    const [editedValues, setEditedValues] = useState<Record<string, any>>({}); // Key: rowIndex, Value: object of changes
+
+    // ... sort/filter logic ...
+
+    const handleCellChange = (rowIndex: number, accessor: string, value: any) => {
+        setEditedValues((prev) => ({
+            ...prev,
+            [rowIndex]: {
+                ...prev[rowIndex],
+                [accessor]: value,
+            },
+        }));
+    };
+
+    const getRowData = (row: T, rowIndex: number) => {
+        return { ...row, ...(editedValues[rowIndex] || {}) };
+    };
+
+    const renderCell = (row: T, col: Column<T>, rowIndex: number) => {
+        // If sorting/filtering changes order, rowIndex needs to be stable relative to the *data source* if we want edits to stick to the ID. 
+        // For now, using index in paginatedData. 
+        // NOTE: In a real app, use a unique ID for keys in 'editedValues'. 
+        // Assuming 'row' might have an ID, but falling back to index for genericness.
+        // A better approach for generic components without enforced ID is difficult. 
+        // We will use the index within *paginatedData* for simplicity in this demo, 
+        // BUT for the "Save" feature to work robustly, we'll merge on the fly.
+
+        const currentVal = (editedValues[rowIndex] && editedValues[rowIndex][col.accessor as string]) ?? row[col.accessor as keyof T];
+
+        if (col.editable) {
+            return (
+                <input
+                    type="text"
+                    className="w-full px-2 py-1 text-sm border border-border rounded bg-white/50 focus:outline-none focus:ring-1 focus:ring-accent"
+                    value={String(currentVal ?? "")}
+                    onChange={(e) => handleCellChange(rowIndex, col.accessor as string, e.target.value)}
+                />
+            );
+        }
+
         if (col.render) return col.render(row);
 
-        const value = row[col.accessor as keyof T];
-        // Default smart rendering similar to snippet
+        const value = row[col.accessor as keyof T]; // Use original for display logic if not editing (or merged if we wanted live updates in non-input cells)
+        // ... rest of render logic ...
         const header = col.header.toLowerCase();
 
         // Auto-badge logic for 'role' or 'status' if no custom render provided
@@ -168,7 +228,7 @@ function Browse<T extends Record<string, any>>({
         if (header.includes("status")) {
             const status = String(value).toLowerCase();
             let variant: "success" | "danger" | "warning" | "info" | "neutral" = "neutral";
-            if (status === "pending") variant = "warning";
+            if (status === "pending" || status === "under_testing") variant = "warning";
             if (status === "rejected") variant = "danger";
             if (["paid", "done", "approved", "repayed", "active"].includes(status)) variant = "success";
             return <Badge text={String(value)} variant={variant} />;
@@ -256,29 +316,32 @@ function Browse<T extends Record<string, any>>({
 
                     <tbody className="divide-y divide-border/50">
                         {paginatedData.length > 0 ? (
-                            paginatedData.map((row, rowIdx) => (
-                                <tr
-                                    key={rowIdx} // Better to have a unique ID if possible, but index works for now
-                                    onClick={() => onRowClick?.(row)}
-                                    className={clsx(
-                                        "transition-colors duration-200 hover:bg-white/60",
-                                        rowIdx % 2 === 0 ? "bg-white/20" : "bg-transparent",
-                                        onRowClick && "cursor-pointer"
-                                    )}
-                                >
-                                    {columns.map((col, colIdx) => (
-                                        <td key={colIdx} className="px-6 py-4 text-text-primary whitespace-nowrap">
-                                            {renderCell(row, col)}
-                                        </td>
-                                    ))}
+                            paginatedData.map((originalRow, rowIdx) => {
+                                const row = getRowData(originalRow, rowIdx); // Merge edits for rendering actions/cells
+                                return (
+                                    <tr
+                                        key={rowIdx} // Better to have a unique ID if possible, but index works for now
+                                        onClick={() => onRowClick?.(row)}
+                                        className={clsx(
+                                            "transition-colors duration-200 hover:bg-white/60",
+                                            rowIdx % 2 === 0 ? "bg-white/20" : "bg-transparent",
+                                            onRowClick && "cursor-pointer"
+                                        )}
+                                    >
+                                        {columns.map((col, colIdx) => (
+                                            <td key={colIdx} className="px-6 py-4 text-text-primary whitespace-nowrap">
+                                                {renderCell(originalRow, col, rowIdx)}
+                                            </td>
+                                        ))}
 
-                                    {rowActions && (
-                                        <td className="px-6 py-4 flex items-center justify-center gap-2">
-                                            {rowActions(row)}
-                                        </td>
-                                    )}
-                                </tr>
-                            ))
+                                        {rowActions && (
+                                            <td className="px-6 py-4 flex items-center justify-center gap-2">
+                                                {rowActions(row)}
+                                            </td>
+                                        )}
+                                    </tr>
+                                )
+                            })
                         ) : (
                             <tr>
                                 <td
