@@ -7,7 +7,8 @@ type ButtonVariant =
   | "success"
   | "warning"
   | "danger"
-  | "ghost";
+  | "ghost"
+  | "outline";
 
 type ButtonSize = "sm" | "md" | "lg";
 
@@ -56,6 +57,9 @@ const variantStyles: Record<ButtonVariant, string> = {
 
   ghost:
     "bg-transparent text-text-primary hover:bg-slate-100 focus:ring-slate-300",
+
+  outline:
+    "bg-transparent border border-border text-text-primary hover:bg-slate-50 focus:ring-slate-300",
 };
 
 export function Button({

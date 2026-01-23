@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { useAuth } from '../../auth/useAuth';
+import { api } from '../../utils/api';
+import { Role } from '../../auth/AuthContext';
 
 interface LoginFormData {
   username: string;
@@ -12,12 +15,8 @@ interface LoginFormData {
 interface LoginResponse {
   accessToken: string;
   username: string;
-  userRole: string;
+  userRole: Role;
   tokenType: string;
-}
-
-interface ErrorResponse {
-  message: string;
 }
 
 function Login() {
@@ -27,6 +26,9 @@ function Login() {
   });
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>('');
+
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -42,27 +44,34 @@ function Login() {
     setMessage('');
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
+      const data = await api.post<LoginResponse>('/auth/login', formData);
 
-      if (response.ok) {
-        const data: LoginResponse = await response.json();
-        localStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('username', data.username);
-        localStorage.setItem('userRole', data.userRole);
+      if (data.accessToken) {
+        login(data);
         setMessage('Login successful!');
+        // Redirect based on role
+        switch (data.userRole) {
+          case Role.ADMIN:
+            navigate('/admin/dashboard');
+            break;
+          case Role.ASSEMBLY_ENGINEER:
+            navigate('/assembly-engineer/dashboard');
+            break;
+          case Role.ASSEMBLER:
+            navigate('/assembler/actuator/form');
+            break;
+          case Role.TESTER:
+            navigate('/tester/dashboard');
+            break;
+          default:
+            navigate('/');
+        }
       } else {
-        const error: ErrorResponse = await response.json();
-        setMessage(error.message || 'Login failed');
+        setMessage('Login failed: No access token received');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      setMessage('An error occurred. Please try again.');
+      setMessage(error.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }

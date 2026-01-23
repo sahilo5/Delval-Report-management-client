@@ -2,19 +2,24 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
+import { api } from "../../utils/api";
 
 interface RegisterFormData {
   username: string;
   email: string;
   password: string;
   confirmPassword: string;
-  phoneNumber: string;
+  phoneNumber: string; // Keep as string for input handling
   firstName: string;
   lastName: string;
 }
 
-interface ErrorResponse {
+interface RegisterResponse {
+  success: boolean;
   message: string;
+  data: any;
+  statusCode: number;
+  timestamp: string;
 }
 
 export default function Register() {
@@ -66,25 +71,26 @@ export default function Register() {
     setLoading(true);
 
     try {
-      // Exclude confirmPassword from the API payload
+      // Exclude confirmPassword from the API payload and convert phoneNumber to number
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { confirmPassword, ...apiData } = formData;
+      const { confirmPassword, phoneNumber, ...rest } = formData;
 
-      const response = await fetch("http://localhost:8080/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(apiData),
-      });
+      const apiData = {
+        ...rest,
+        phoneNumber: parseInt(phoneNumber, 10) // Convert string to number (Long)
+      };
 
-      if (response.ok) {
-        setMessage("Registration successful! You can now log in.");
+      const response = await api.post<RegisterResponse>("/auth/register", apiData);
+
+      if (response && (response.success || response.message)) {
+        // Check for success flag if API returns standard wrapper, or just assume success if no error thrown
+        setMessage(response.message || "Registration successful! You can now log in.");
       } else {
-        const error: ErrorResponse = await response.json();
-        setMessage(error.message || "Registration failed");
+        setMessage("Registration failed (No message returned)");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration error:", error);
-      setMessage("An error occurred. Please try again.");
+      setMessage(error.message || "An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -211,7 +217,7 @@ export default function Register() {
           <div className="text-center">
             <p className="text-sm text-text-muted">
               Already have an account?{' '}
-              <Link to="/" className="font-medium text-primary hover:text-primary/80 transition-colors">
+              <Link to="/login" className="font-medium text-primary hover:text-primary/80 transition-colors">
                 Sign in here
               </Link>
             </p>
